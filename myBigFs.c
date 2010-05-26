@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <stdlib.h>
+#include <sys/statvfs.h>
 
 struct dirent *readdir(DIR *dir);
 
@@ -153,10 +154,43 @@ return ret;
 	char* localPath = p;
 	strappnd(localPath, path);
 
-   // ret = statvfs(localPath, statv);
+	printf("path : %s \n ",localPath);
+	
+	int fd = open(localPath, O_RDONLY);
+    //ret = fstatvfs(fd, buf);
+    close(fd);
     
-    buf->f_blocks = 200;
-	buf->f_bfree = 100;
+    printf("ret : %d  \n",ret);
+    
+    //fixed fantasy constant
+    buf->f_bsize = 1024;
+    
+    //fixed size..
+    buf->f_blocks = 200000;
+    
+    struct dirent *dp;
+
+	long bytes = 0;
+
+	DIR* dirp = opendir(".");
+	while (dirp)
+	{
+		dp = readdir(dirp);
+
+		if (dp != NULL ) {
+			if( dp->d_type == 8 ){
+				struct stat s;
+				stat( dp->d_name , &s);
+				bytes += s.st_size;
+			}
+		} else {
+			closedir(dirp);
+			break;
+		}
+	}
+		
+    printf("bytes: %ld \n" , bytes);
+	buf->f_bfree =  buf->f_blocks - (bytes / 1024);
 	buf->f_bavail =  buf->f_bfree;
     
     if (ret < 0)
@@ -291,6 +325,7 @@ static int hello_write(const char *path, const char *buf, size_t size, off_t off
       .truncate = hello_truncate,
       .write = hello_write,
       .mknod = hello_mknod,
+      .statfs = hello_statfs,
   };
   
   int main(int argc, char *argv[])
