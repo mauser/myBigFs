@@ -14,6 +14,10 @@
 
 struct dirent *readdir(DIR *dir);
 
+struct myData {
+	char* rootdir;
+};
+ 
 #define _XOPEN_SOURCE 500
  
   
@@ -42,7 +46,12 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 	strappnd(localPath, path);
 	printf("path: %s\n",localPath);
 	int err = stat( localPath , &s);
-	  
+
+	struct myData *data;
+	
+	data = ((struct myData *) fuse_get_context()->private_data);
+	printf("our rootdir is %s\n", data->rootdir); 	 
+ 
 	if(strcmp(path, "/") == 0) {
 	  printf("Yes, this is a dir.\n");
           stbuf->st_mode = S_IFDIR | 0755;
@@ -323,22 +332,31 @@ static int hello_write(const char *path, const char *buf, size_t size, off_t off
       .mknod = hello_mknod,
       .statfs = hello_statfs,
   };
-  
-  int main(int argc, char *argv[])
-  {
+ 
+int main(int argc, char *argv[])
+{
+	struct myData *data;
+
+	data = calloc(sizeof(struct myData), 1);
+    	if (data == NULL) {
+		perror("main calloc");
+		abort();
+    	}
+
+
 	int i;
 	for (i = 1; (i < argc) && (argv[i][0] == '-'); i++);
 	if (i == argc)
     		printf("you've used it wrong!");
-    
+
+	    
+	data->rootdir = realpath(argv[i],NULL);
 	printf("We're operating on %s \n", realpath(argv[i], NULL));
 
 	for (; i < argc; i++)
     		argv[i] = argv[i+1];
 	argc--;
 
-
-
-      return fuse_main(argc, argv, &hello_oper, NULL);
+       return fuse_main(argc, argv, &hello_oper, data); 
   }
 
