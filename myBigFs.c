@@ -179,7 +179,6 @@ static int hello_truncate (const char *path, off_t offset){
 	{
 		dp = readdir(dirp);
 		if (dp != NULL ) {
-			printf("found an entry.. \n");
 			if( dp->d_type == 8 ){
 				struct stat s;
 				char tmpPath[1024];
