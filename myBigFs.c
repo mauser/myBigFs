@@ -141,7 +141,7 @@ static int hello_truncate (const char *path, off_t offset){
 			if (dp != NULL ) {
 				if( dp->d_type == 8 ){
 					char tmp [1024];
-					strcpy(tmp,fpath);
+					strcpy(tmp,path);
 					strcat( tmp , dp->d_name);
 					//printf("fill with %s\n", tmp);
 					filler(buf, tmp + 1 , NULL, 0);
