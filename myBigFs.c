@@ -30,6 +30,21 @@ void getFullpath(char fpath[1024], const char* path){
 	strcpy(fpath,data->rootdir);
 	strncat(fpath,path,1024); 
 }
+
+long getFileSize( char fpath[1024] ){	
+	
+	int fd = open(fpath, O_RDONLY);
+	char tmpBuf[10];
+	char *b = tmpBuf;
+	//a 32bit number has max. 10 digits
+	pread(fd, tmpBuf, 10 , 0);
+	
+	//interprete the file content as the file size
+	char * pEnd;
+	long fSize= strtol (tmpBuf,&pEnd,10);
+	close(fd);
+	return fSize;
+}
  
 static int hello_getattr(const char *path, struct stat *stbuf)
 {
@@ -65,20 +80,9 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_mtime = s.st_mtime;
 		stbuf->st_ctime = s.st_ctime;
 		
-		int fd = open(fpath, O_RDONLY);
 			
-		char tmpBuf[10];
-		char *b = tmpBuf;
-		//a 32bit number has max. 10 digits
-		pread(fd, tmpBuf, 10 , 0);
-			
-		//interprete the file content as the file size
-		char * pEnd;
-		long fSize= strtol (tmpBuf,&pEnd,10);
-			
-		close(fd);
 		
-		stbuf->st_size = fSize;
+		stbuf->st_size = getFileSize(fpath);
           
     } else {
           res = -ENOENT;
@@ -174,12 +178,18 @@ static int hello_truncate (const char *path, off_t offset){
 	while (dirp)
 	{
 		dp = readdir(dirp);
-
 		if (dp != NULL ) {
+			printf("found an entry.. \n");
 			if( dp->d_type == 8 ){
 				struct stat s;
+				char tmpPath[1024];
+				
 				stat( dp->d_name , &s);
-				bytes += s.st_size;
+				strcpy(tmpPath,fpath);
+				strcat(tmpPath,"/");
+				strcat(tmpPath, dp->d_name);
+				
+				bytes += getFileSize(tmpPath);
 			}
 		} else {
 			closedir(dirp);
