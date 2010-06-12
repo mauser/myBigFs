@@ -16,13 +16,8 @@ struct dirent *readdir(DIR *dir);
 
 #define _XOPEN_SOURCE 500
  
-  static const char *hello_str = "Hello World!\n";
-  static const char *hello_path = "/hello";
-  static const char *file_path = "/file";
-  static const char *file_str = "example\n";
   
-  
-  void strappnd(char *dest, char *src)
+void strappnd(char *dest, char *src)
 {
 	/* appends one string to another */
              while(*dest != '\0')
@@ -36,8 +31,8 @@ struct dirent *readdir(DIR *dir);
 }
   
   
-  static int hello_getattr(const char *path, struct stat *stbuf)
-  {
+static int hello_getattr(const char *path, struct stat *stbuf)
+{
 	int res = 0;
 	memset(stbuf, 0, sizeof(struct stat));
       
@@ -51,10 +46,10 @@ struct dirent *readdir(DIR *dir);
 	if(strcmp(path, "/") == 0) {
           stbuf->st_mode = S_IFDIR | 0755;
           stbuf->st_nlink = 2;
-		  return res;
-     }
+	  return res;
+     	}
 	  
-    if( err == 0)  {
+    	if( err == 0)  {
 		  
 		stbuf->st_mode = S_IFREG | 0777;
 		stbuf->st_nlink = 1;
@@ -83,7 +78,7 @@ struct dirent *readdir(DIR *dir);
 	}
   
       return res;
-  }
+}
  
 
 static int hello_truncate (const char *path, off_t offset){
@@ -96,7 +91,7 @@ static int hello_truncate (const char *path, off_t offset){
 	int ret = ftruncate( fd, offset );
 	close(fd);
 
-return ret;
+	return ret;
   }
  
  
@@ -148,27 +143,27 @@ return ret;
   
   int hello_statfs(const char *path, struct statvfs *buf)
 {
-    int ret = 0;
+	int ret = 0;
         
-    char p [1024] = ".";
+	char p [1024] = ".";
 	char* localPath = p;
 	strappnd(localPath, path);
 
 	printf("path : %s \n ",localPath);
 	
 	int fd = open(localPath, O_RDONLY);
-    //ret = fstatvfs(fd, buf);
-    close(fd);
+ 	//ret = fstatvfs(fd, buf);
+    	close(fd);
     
-    printf("ret : %d  \n",ret);
+    	printf("ret : %d  \n",ret);
     
-    //fixed fantasy constant
-    buf->f_bsize = 1024;
+    	//fixed fantasy constant
+    	buf->f_bsize = 1024;
     
-    //fixed size..
-    buf->f_blocks = 200000;
+    	//fixed size..
+    	buf->f_blocks = 200000;
     
-    struct dirent *dp;
+    	struct dirent *dp;
 
 	long bytes = 0;
 
@@ -189,15 +184,15 @@ return ret;
 		}
 	}
 		
-    printf("bytes: %ld \n" , bytes);
+    	printf("bytes: %ld \n" , bytes);
 	buf->f_bfree =  buf->f_blocks - (bytes / 1024);
 	buf->f_bavail =  buf->f_bfree;
     
-    if (ret < 0)
+    	if (ret < 0)
 		ret =printf("statvfs error");
     
     
-    return ret;
+    	return ret;
 }
 
   
@@ -211,11 +206,11 @@ return ret;
 	char p [1024] = ".";
 	char* localPath = p;
 	strappnd(localPath, path);
-    int err = stat( localPath , &s);
+    	int err = stat( localPath , &s);
      
-    //printf("buf has size: %ld", sizeof(buf));
+    	//printf("buf has size: %ld", sizeof(buf));
      
-    if( err == 0){
+    	if( err == 0){
 
 			int fd = open(localPath, O_RDONLY);
 			
@@ -276,7 +271,7 @@ static int hello_write(const char *path, const char *buf, size_t size, off_t off
 	char p [1024] = ".";
 	char* localPath = p;
 	strappnd(localPath, path);
-    int err = stat( localPath , &s);
+    	int err = stat( localPath , &s);
 
 	//printf("we should write %ld bytes from offset %ld \n", size,offset);
 
