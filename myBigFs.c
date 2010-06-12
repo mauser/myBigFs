@@ -27,14 +27,8 @@ void getFullpath(char fpath[1024], const char* path){
 	struct myData *data;
 	data = ((struct myData *) fuse_get_context()->private_data);
     	
-	printf("get full path for %s \n", path);
-
 	strcpy(fpath,data->rootdir);
-
-	printf("fpath is  %s \n", fpath);
-
 	strncat(fpath,path,1024); 
-	printf("at the end of getFullpath \n");
 }
  
 static int hello_getattr(const char *path, struct stat *stbuf)
@@ -52,8 +46,6 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 
 	int err = stat( fpath , &s);
 
-	printf("fpath is %s \n",fpath);
-
 	char rootPath[1024];
 	strcpy(rootPath, data->rootdir);
 	strcat(rootPath,"/"); 	
@@ -66,8 +58,6 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 	  
 	if( err == 0)  {
 		  
-		printf("errno=0\n");		
-
 		stbuf->st_mode = S_IFREG | 0777;
 		stbuf->st_nlink=1;
 		stbuf->st_uid = 1000;
@@ -170,15 +160,6 @@ static int hello_truncate (const char *path, off_t offset){
 	char fpath[1024];
 	getFullpath(fpath,path) ;
 	
-
-	printf("path : %s \n ",fpath);
-	
-	//int fd = open(fpath, O_RDONLY);
- 	//ret = fstatvfs(fd, buf);
-    	//close(fd);
-    
-    	//printf("ret : %d  \n",ret);
-    
     	//fixed fantasy constant
     	buf->f_bsize = 1024;
     
