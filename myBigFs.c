@@ -44,6 +44,7 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 	int err = stat( localPath , &s);
 	  
 	if(strcmp(path, "/") == 0) {
+	  printf("Yes, this is a dir.\n");
           stbuf->st_mode = S_IFDIR | 0755;
           stbuf->st_nlink = 2;
 	  return res;
@@ -325,6 +326,19 @@ static int hello_write(const char *path, const char *buf, size_t size, off_t off
   
   int main(int argc, char *argv[])
   {
+	int i;
+	for (i = 1; (i < argc) && (argv[i][0] == '-'); i++);
+	if (i == argc)
+    		printf("you've used it wrong!");
+    
+	printf("We're operating on %s \n", realpath(argv[i], NULL));
+
+	for (; i < argc; i++)
+    		argv[i] = argv[i+1];
+	argc--;
+
+
+
       return fuse_main(argc, argv, &hello_oper, NULL);
   }
 
