@@ -20,55 +20,62 @@ struct myData {
  
 #define _XOPEN_SOURCE 500
  
-  
-void strappnd(char *dest, char *src)
-{
-	/* appends one string to another */
-             while(*dest != '\0')
-             {
-                     *dest++;
-             }
-	while (*src != '\0')
-		*dest++ = *src++;
+ 
+void getFullpath(char fpath[1024], const char* path){
+	
 
-	*dest = '\0';
+	struct myData *data;
+	data = ((struct myData *) fuse_get_context()->private_data);
+    	
+	printf("get full path for %s \n", path);
+
+	strcpy(fpath,data->rootdir);
+
+	printf("fpath is  %s \n", fpath);
+
+	strncat(fpath,path,1024); 
+	printf("at the end of getFullpath \n");
 }
-  
-  
+ 
 static int hello_getattr(const char *path, struct stat *stbuf)
 {
 	int res = 0;
-	memset(stbuf, 0, sizeof(struct stat));
       
 	struct stat s;
-	char p [1024] = ".";
-	char* localPath = p;
-	strappnd(localPath, path);
-	printf("path: %s\n",localPath);
-	int err = stat( localPath , &s);
-
-	struct myData *data;
+	memset(stbuf, 0, sizeof(struct stat));
 	
+	struct myData *data;
 	data = ((struct myData *) fuse_get_context()->private_data);
-	printf("our rootdir is %s\n", data->rootdir); 	 
- 
-	if(strcmp(path, "/") == 0) {
-	  printf("Yes, this is a dir.\n");
+    	
+	char fpath[1024];
+	getFullpath(fpath,path) ;
+
+	int err = stat( fpath , &s);
+
+	printf("fpath is %s \n",fpath);
+
+	char rootPath[1024];
+	strcpy(rootPath, data->rootdir);
+	strcat(rootPath,"/"); 	
+
+	if(strcmp(fpath, rootPath ) == 0) {
           stbuf->st_mode = S_IFDIR | 0755;
           stbuf->st_nlink = 2;
 	  return res;
      	}
 	  
-    	if( err == 0)  {
+	if( err == 0)  {
 		  
+		printf("errno=0\n");		
+
 		stbuf->st_mode = S_IFREG | 0777;
-		stbuf->st_nlink = 1;
+		stbuf->st_nlink=1;
 		stbuf->st_uid = 1000;
 		stbuf->st_atime = s.st_atime;
 		stbuf->st_mtime = s.st_mtime;
 		stbuf->st_ctime = s.st_ctime;
 		
-		int fd = open(localPath, O_RDONLY);
+		int fd = open(fpath, O_RDONLY);
 			
 		char tmpBuf[10];
 		char *b = tmpBuf;
@@ -92,12 +99,14 @@ static int hello_getattr(const char *path, struct stat *stbuf)
  
 
 static int hello_truncate (const char *path, off_t offset){
-
-	char p [1024] = ".";
-	char* localPath = p;
-	strappnd(localPath, path);
 	
-	int fd = open( localPath, O_WRONLY);
+	struct myData *data;
+	data = ((struct myData *) fuse_get_context()->private_data);
+	
+	char fpath[1024];
+	getFullpath(fpath,path) ;
+	
+	int fd = open( fpath, O_WRONLY);
 	int ret = ftruncate( fd, offset );
 	close(fd);
 
@@ -108,33 +117,34 @@ static int hello_truncate (const char *path, off_t offset){
  static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                            off_t offset, struct fuse_file_info *fi)
   {
-		(void) offset;
-		(void) fi;
+	(void) offset;
+	(void) fi;
   
-		if(strcmp(path, "/") != 0)
-			return -ENOENT;
+	if(strcmp(path, "/") != 0)
+		return -ENOENT;
   
-		filler(buf, ".", NULL, 0);
-		filler(buf, "..", NULL, 0);
+	filler(buf, ".", NULL, 0);
+	filler(buf, "..", NULL, 0);
 	  
-		struct dirent *dp;
-	   
-		char p [1024] = ".";
-		char* localPath = p;
-		strappnd(localPath, path);
-		//printf("opening path %s", localPath);
-		DIR* dirp = opendir( localPath );
+	struct dirent *dp;
+	struct myData *data;
+	data = ((struct myData *) fuse_get_context()->private_data);
+	char fpath[1024];
+	getFullpath( fpath,path ) ;
+	
+	printf("opening path %s \n", fpath);
+	DIR* dirp = opendir( fpath );
 
-		while (dirp) {
-			 dp = readdir(dirp);
+	while (dirp) {
+		 dp = readdir(dirp);
 
 			if (dp != NULL ) {
 				if( dp->d_type == 8 ){
 					char tmp [1024];
-					strcpy(tmp,localPath);
+					strcpy(tmp,fpath);
 					strcat( tmp , dp->d_name);
 					//printf("fill with %s\n", tmp);
-					filler(buf, tmp + 2 , NULL, 0);
+					filler(buf, tmp + 1 , NULL, 0);
 				}
 			} else {
 				 closedir(dirp);
@@ -155,13 +165,15 @@ static int hello_truncate (const char *path, off_t offset){
 {
 	int ret = 0;
         
-	char p [1024] = ".";
-	char* localPath = p;
-	strappnd(localPath, path);
-
-	printf("path : %s \n ",localPath);
+	struct myData *data;
+	data = ((struct myData *) fuse_get_context()->private_data);
+	char fpath[1024];
+	getFullpath(fpath,path) ;
 	
-	int fd = open(localPath, O_RDONLY);
+
+	printf("path : %s \n ",fpath);
+	
+	int fd = open(fpath, O_RDONLY);
  	//ret = fstatvfs(fd, buf);
     	close(fd);
     
@@ -211,18 +223,20 @@ static int hello_truncate (const char *path, off_t offset){
   {
 	size_t len;
 	(void) fi;
+	struct myData *data;
+	data = ((struct myData *) fuse_get_context()->private_data);
+	char fpath[1024];
+	getFullpath(fpath,path) ;
+	
       
 	struct stat s;
-	char p [1024] = ".";
-	char* localPath = p;
-	strappnd(localPath, path);
-    	int err = stat( localPath , &s);
+    	int err = stat( fpath , &s);
      
     	//printf("buf has size: %ld", sizeof(buf));
      
     	if( err == 0){
 
-			int fd = open(localPath, O_RDONLY);
+			int fd = open(fpath, O_RDONLY);
 			
 			char tmpBuf[10];
 			char *b = tmpBuf;
@@ -260,14 +274,16 @@ static int hello_truncate (const char *path, off_t offset){
 int hello_mknod(const char *path, mode_t mode, dev_t dev)
 {
   
+	struct myData *data;
+	data = ((struct myData *) fuse_get_context()->private_data);
+	char fpath[1024];
+	getFullpath(fpath,path) ;
+	
 
-    struct stat s;
-	char p [1024] = ".";
-	char* localPath = p;
-	strappnd(localPath, path);
-    int err = stat( localPath , &s);
+    	struct stat s;
+    int err = stat( path , &s);
 
-	int ret = mknod(localPath, mode, dev);
+	int ret = mknod(fpath, mode, dev);
 	if (ret < 0)
 		ret = printf("mknod failed\n");
 	
@@ -278,14 +294,16 @@ int hello_mknod(const char *path, mode_t mode, dev_t dev)
 static int hello_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
 
 	struct stat s;
-	char p [1024] = ".";
-	char* localPath = p;
-	strappnd(localPath, path);
-    	int err = stat( localPath , &s);
+	struct myData *data;
+	data = ((struct myData *) fuse_get_context()->private_data);
+	char fpath[1024];
+	getFullpath(fpath,path) ;
+	
+    	int err = stat( fpath , &s);
 
 	//printf("we should write %ld bytes from offset %ld \n", size,offset);
 
-	int fd = open(localPath, O_RDONLY);
+	int fd = open(fpath, O_RDONLY);
 			
 	char tmpBuf[10];
 	char *b = tmpBuf;
@@ -298,7 +316,7 @@ static int hello_write(const char *path, const char *buf, size_t size, off_t off
 			
 	close(fd);
 	
-	fd = open(localPath, O_WRONLY | O_CREAT);
+	fd = open(path, O_WRONLY | O_CREAT);
 	
 	long newSize;
 	//if(offset == 0) newSize = fSize + size; 
