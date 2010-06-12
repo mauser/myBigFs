@@ -173,11 +173,11 @@ static int hello_truncate (const char *path, off_t offset){
 
 	printf("path : %s \n ",fpath);
 	
-	int fd = open(fpath, O_RDONLY);
+	//int fd = open(fpath, O_RDONLY);
  	//ret = fstatvfs(fd, buf);
-    	close(fd);
+    	//close(fd);
     
-    	printf("ret : %d  \n",ret);
+    	//printf("ret : %d  \n",ret);
     
     	//fixed fantasy constant
     	buf->f_bsize = 1024;
@@ -189,7 +189,7 @@ static int hello_truncate (const char *path, off_t offset){
 
 	long bytes = 0;
 
-	DIR* dirp = opendir(".");
+	DIR* dirp = opendir( data->rootdir );
 	while (dirp)
 	{
 		dp = readdir(dirp);
