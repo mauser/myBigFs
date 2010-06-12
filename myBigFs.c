@@ -297,7 +297,7 @@ static int hello_write(const char *path, const char *buf, size_t size, off_t off
 			
 	close(fd);
 	
-	fd = open(path, O_WRONLY | O_CREAT);
+	fd = open(fpath, O_WRONLY | O_CREAT);
 	
 	long newSize;
 	//if(offset == 0) newSize = fSize + size; 
