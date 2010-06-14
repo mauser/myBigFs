@@ -20,7 +20,7 @@ struct myData {
 };
  
 #define _XOPEN_SOURCE 500
- 
+#define MAX_BLOCKS 200000
  
 void getFullpath(char fpath[1024], const char* path){
 	
@@ -127,7 +127,7 @@ static int myBigFs_truncate (const char *path, off_t offset){
 	char fpath[1024];
 	getFullpath( fpath,path ) ;
 	
-	printf("opening path %s \n", fpath);
+	//printf("opening path %s \n", fpath);
 	DIR* dirp = opendir( fpath );
 
 	while (dirp) {
@@ -191,9 +191,9 @@ long getFileSystemSize(){
 		}
 	}
 
-
+	if( bytes / 1024 > MAX_BLOCKS ) bytes = MAX_BLOCKS*1024;
 	data->fs_size = bytes;
-	printf("getFsSize returned %ld bytes", bytes);
+	//printf("getFsSize returned %ld bytes", bytes);
 	return bytes;		
 }
 
@@ -208,7 +208,7 @@ int myBigFs_statfs(const char *path, struct statvfs *buf)
     	buf->f_bsize = 1024;
     
     	//fixed size..
-    	buf->f_blocks = 200000;
+    	buf->f_blocks = MAX_BLOCKS;
     
 	long bytes = getFileSystemSize();
         
@@ -219,7 +219,11 @@ int myBigFs_statfs(const char *path, struct statvfs *buf)
 	
 	buf->f_bfree =  buf->f_blocks - (bytes / 1024);
 	buf->f_bavail =  buf->f_bfree;
-   
+  
+	printf("f_bfree: %ld\n", buf->f_bfree);
+	printf("bytes / 1024: %ld \n", (bytes/1024));
+	//printf("f_bfree: \n", buf->f_bfree);
+	  
  
     	if (ret < 0)
 		ret =printf("statvfs error");
@@ -277,7 +281,7 @@ int myBigFs_statfs(const char *path, struct statvfs *buf)
 		//} else
 		//	size = 0;
 	}
-	//printf("return size: %ld", size);  
+//	printf("return size: %ld", size);  
 	return size;
   }
 
@@ -307,12 +311,22 @@ static int myBigFs_write(const char *path, const char *buf, size_t size, off_t o
 	struct stat s;
 	struct myData *data;
 	data = ((struct myData *) fuse_get_context()->private_data);
+
 	char fpath[1024];
 	getFullpath(fpath,path) ;
 	
     	int err = stat( fpath , &s);
 
-	//printf("we should write %ld bytes from offset %ld \n", size,offset);
+	printf("size: %d \n", size);
+	printf("file system size after this write in blocks: %ld \n", ( data->fs_size + size ) / 1024 ); 	
+	//check if the filesystem is "full"
+	if( ((data->fs_size + size) / 1024) + 1 >= MAX_BLOCKS ){
+		data->fs_size = MAX_BLOCKS*1024;
+		printf("exit!");
+		return size;
+	} else {
+		data->fs_size = data->fs_size + size;
+	} 
 
 	int fd = open(fpath, O_RDONLY);
 			
@@ -339,8 +353,7 @@ static int myBigFs_write(const char *path, const char *buf, size_t size, off_t o
 	//printf("We're writing %s to the file \n", longBuffer );
 	
 	int f = pwrite(fd, longBuffer, strlen(longBuffer) , 0);
-	
-	
+
 	close(fd);
 	
 	if(f<0){
@@ -348,6 +361,8 @@ static int myBigFs_write(const char *path, const char *buf, size_t size, off_t o
 		return -errno;
 	}
 
+	
+		
      return size;
 }
   
