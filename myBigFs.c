@@ -16,6 +16,7 @@ struct dirent *readdir(DIR *dir);
 
 struct myData {
 	char* rootdir;
+	long fs_size;
 };
  
 #define _XOPEN_SOURCE 500
@@ -46,7 +47,7 @@ long getFileSize( char fpath[1024] ){
 	return fSize;
 }
  
-static int hello_getattr(const char *path, struct stat *stbuf)
+static int myBigFs_getattr(const char *path, struct stat *stbuf)
 {
 	int res = 0;
       
@@ -92,7 +93,7 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 }
  
 
-static int hello_truncate (const char *path, off_t offset){
+static int myBigFs_truncate (const char *path, off_t offset){
 	
 	struct myData *data;
 	data = ((struct myData *) fuse_get_context()->private_data);
@@ -108,7 +109,7 @@ static int hello_truncate (const char *path, off_t offset){
   }
  
  
- static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+ static int myBigFs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                            off_t offset, struct fuse_file_info *fi)
   {
 	(void) offset;
@@ -149,27 +150,22 @@ static int hello_truncate (const char *path, off_t offset){
       return 0;
   }
   
-  static int hello_open(const char *path, struct fuse_file_info *fi)
+  static int myBigFs_open(const char *path, struct fuse_file_info *fi)
   {
 	//open everything. we have nothing to hide.
       return 0;
   }
-  
-  int hello_statfs(const char *path, struct statvfs *buf)
-{
-	int ret = 0;
-        
+ 
+
+
+
+long getFileSystemSize(){
+
 	struct myData *data;
 	data = ((struct myData *) fuse_get_context()->private_data);
-	char fpath[1024];
-	getFullpath(fpath,path) ;
+	//char fpath[1024];
+	//getFullpath(fpath,path) ;
 	
-    	//fixed fantasy constant
-    	buf->f_bsize = 1024;
-    
-    	//fixed size..
-    	buf->f_blocks = 200000;
-    
     	struct dirent *dp;
 
 	long bytes = 0;
@@ -183,11 +179,10 @@ static int hello_truncate (const char *path, off_t offset){
 				struct stat s;
 				char tmpPath[1024];
 				
-				stat( dp->d_name , &s);
-				strcpy(tmpPath,fpath);
+				strcpy(tmpPath,data->rootdir);
 				strcat(tmpPath,"/");
 				strcat(tmpPath, dp->d_name);
-				
+
 				bytes += getFileSize(tmpPath);
 			}
 		} else {
@@ -195,11 +190,37 @@ static int hello_truncate (const char *path, off_t offset){
 			break;
 		}
 	}
-		
+
+
+	data->fs_size = bytes;
+	printf("getFsSize returned %ld bytes", bytes);
+	return bytes;		
+}
+
+
+
+ 
+int myBigFs_statfs(const char *path, struct statvfs *buf)
+{
+	int ret = 0;
+
+    	//fixed fantasy constant
+    	buf->f_bsize = 1024;
+    
+    	//fixed size..
+    	buf->f_blocks = 200000;
+    
+	long bytes = getFileSystemSize();
+        
+	//if a file is smaller then blocksize, use blocksize..
+	if( bytes < 1024 ) bytes = 1024;
+
     	printf("bytes: %ld \n" , bytes);
+	
 	buf->f_bfree =  buf->f_blocks - (bytes / 1024);
 	buf->f_bavail =  buf->f_bfree;
-    
+   
+ 
     	if (ret < 0)
 		ret =printf("statvfs error");
     
@@ -208,7 +229,7 @@ static int hello_truncate (const char *path, off_t offset){
 }
 
   
-  static int hello_read(const char *path, char *buf, size_t size, off_t offset,
+  static int myBigFs_read(const char *path, char *buf, size_t size, off_t offset,
                         struct fuse_file_info *fi)
   {
 	size_t len;
@@ -261,7 +282,7 @@ static int hello_truncate (const char *path, off_t offset){
   }
 
 
-int hello_mknod(const char *path, mode_t mode, dev_t dev)
+int myBigFs_mknod(const char *path, mode_t mode, dev_t dev)
 {
   
 	struct myData *data;
@@ -281,7 +302,7 @@ int hello_mknod(const char *path, mode_t mode, dev_t dev)
     return ret;
 }
 
-static int hello_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
+static int myBigFs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
 
 	struct stat s;
 	struct myData *data;
@@ -330,15 +351,15 @@ static int hello_write(const char *path, const char *buf, size_t size, off_t off
      return size;
 }
   
-  static struct fuse_operations hello_oper = {
-      .getattr = hello_getattr,
-      .readdir = hello_readdir,
-      .open = hello_open,
-      .read = hello_read,
-      .truncate = hello_truncate,
-      .write = hello_write,
-      .mknod = hello_mknod,
-      .statfs = hello_statfs,
+  static struct fuse_operations myBigFs_oper = {
+      .getattr = myBigFs_getattr,
+      .readdir = myBigFs_readdir,
+      .open = myBigFs_open,
+      .read = myBigFs_read,
+      .truncate = myBigFs_truncate,
+      .write = myBigFs_write,
+      .mknod = myBigFs_mknod,
+      .statfs = myBigFs_statfs,
   };
  
 int main(int argc, char *argv[])
@@ -359,12 +380,13 @@ int main(int argc, char *argv[])
 
 	    
 	data->rootdir = realpath(argv[i],NULL);
+	data->fs_size = 0;
 	printf("We're operating on %s \n", realpath(argv[i], NULL));
 
 	for (; i < argc; i++)
     		argv[i] = argv[i+1];
 	argc--;
 
-       return fuse_main(argc, argv, &hello_oper, data); 
+       return fuse_main(argc, argv, &myBigFs_oper, data); 
   }
 
