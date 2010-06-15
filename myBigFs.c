@@ -35,15 +35,28 @@ void getFullpath(char fpath[1024], const char* path){
 long getFileSize( char fpath[1024] ){	
 	
 	int fd = open(fpath, O_RDONLY);
-	char tmpBuf[10];
-	char *b = tmpBuf;
+	char* tmpBuf;
+
+	struct stat s;
+	stat( fpath , &s);
+
+	//number of chars in the file
+	int chars = (int) s.st_size;
+	tmpBuf = malloc( chars );
+
 	//a 32bit number has max. 10 digits
-	pread(fd, tmpBuf, 10 , 0);
-	
+	pread(fd, tmpBuf, (int)s.st_size , 0);
+
+	//printf("read %d bytes: \n", (int) s.st_size );	 	
+	//printf("tmpBuf is %s \n", tmpBuf);	 	
 	//interprete the file content as the file size
 	char * pEnd;
 	long fSize= strtol (tmpBuf,&pEnd,10);
 	close(fd);
+
+	free(tmpBuf);
+	//printf("getFileSize(): size for %s is %ld \n", fpath, fSize);
+
 	return fSize;
 }
  
@@ -80,9 +93,6 @@ static int myBigFs_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_atime = s.st_atime;
 		stbuf->st_mtime = s.st_mtime;
 		stbuf->st_ctime = s.st_ctime;
-		
-			
-		
 		stbuf->st_size = getFileSize(fpath);
           
     } else {
@@ -190,7 +200,7 @@ long getFileSystemSize(){
 			break;
 		}
 	}
-
+	//printf("bytes before block setting: %ld",bytes);
 	if( bytes / 1024 > MAX_BLOCKS ) bytes = MAX_BLOCKS*1024;
 	data->fs_size = bytes;
 	//printf("getFsSize returned %ld bytes", bytes);
@@ -215,13 +225,13 @@ int myBigFs_statfs(const char *path, struct statvfs *buf)
 	//if a file is smaller then blocksize, use blocksize..
 	if( bytes < 1024 ) bytes = 1024;
 
-    	printf("bytes: %ld \n" , bytes);
+    	//printf("bytes: %ld \n" , bytes);
 	
 	buf->f_bfree =  buf->f_blocks - (bytes / 1024);
 	buf->f_bavail =  buf->f_bfree;
   
-	printf("f_bfree: %ld\n", buf->f_bfree);
-	printf("bytes / 1024: %ld \n", (bytes/1024));
+	//printf("f_bfree: %ld\n", buf->f_bfree);
+	////printf("bytes / 1024: %ld \n", (bytes/1024));
 	//printf("f_bfree: \n", buf->f_bfree);
 	  
  
@@ -296,7 +306,7 @@ int myBigFs_mknod(const char *path, mode_t mode, dev_t dev)
 	
 
     	struct stat s;
-    int err = stat( path , &s);
+    	int err = stat( path , &s);
 
 	int ret = mknod(fpath, mode, dev);
 	if (ret < 0)
@@ -317,12 +327,10 @@ static int myBigFs_write(const char *path, const char *buf, size_t size, off_t o
 	
     	int err = stat( fpath , &s);
 
-	printf("size: %d \n", size);
-	printf("file system size after this write in blocks: %ld \n", ( data->fs_size + size ) / 1024 ); 	
+	//printf("file system size after this write in blocks: %ld \n", ( data->fs_size + size ) / 1024 ); 	
 	//check if the filesystem is "full"
 	if( ((data->fs_size + size) / 1024) + 1 >= MAX_BLOCKS ){
 		data->fs_size = MAX_BLOCKS*1024;
-		printf("exit!");
 		return size;
 	} else {
 		data->fs_size = data->fs_size + size;
