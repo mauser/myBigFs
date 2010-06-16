@@ -45,7 +45,7 @@ long getFileSize( char fpath[1024] ){
 	tmpBuf = malloc( chars );
 
 	//a 32bit number has max. 10 digits
-	pread(fd, tmpBuf, (int)s.st_size , 0);
+	pread(fd, tmpBuf, chars , 0);
 
 	//printf("read %d bytes: \n", (int) s.st_size );	 	
 	//printf("tmpBuf is %s \n", tmpBuf);	 	
@@ -268,7 +268,7 @@ int myBigFs_statfs(const char *path, struct statvfs *buf)
 			int chars = (int) s.st_size;
 			tmpBuf = malloc( chars );
 			//a 32bit number has max. 10 digits
-			pread(fd, tmpBuf, 10 , 0);
+			pread(fd, tmpBuf, chars , 0);
 			
 			//interprete the file content as the file size
 			char * pEnd;
@@ -345,7 +345,7 @@ static int myBigFs_write(const char *path, const char *buf, size_t size, off_t o
 	int chars = (int) s.st_size;
 	tmpBuf = malloc( chars );
 	//a 32bit number has max. 10 digits
-	pread(fd, tmpBuf, 10 , 0);
+	pread(fd, tmpBuf, chars , 0);
 			
 	//interprete the file content as the file size
 	char * pEnd;
