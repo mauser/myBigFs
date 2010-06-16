@@ -262,9 +262,11 @@ int myBigFs_statfs(const char *path, struct statvfs *buf)
     	if( err == 0){
 
 			int fd = open(fpath, O_RDONLY);
+			char* tmpBuf;
 			
-			char tmpBuf[10];
-			char *b = tmpBuf;
+			//number of chars in the file
+			int chars = (int) s.st_size;
+			tmpBuf = malloc( chars );
 			//a 32bit number has max. 10 digits
 			pread(fd, tmpBuf, 10 , 0);
 			
@@ -285,7 +287,7 @@ int myBigFs_statfs(const char *path, struct statvfs *buf)
 			}
 			
 			//printf("buf %s \n", buf);
-		
+			free(tmpBuf);
 			close(fd);
 			
 		//} else
@@ -337,9 +339,11 @@ static int myBigFs_write(const char *path, const char *buf, size_t size, off_t o
 	} 
 
 	int fd = open(fpath, O_RDONLY);
+	char* tmpBuf;
 			
-	char tmpBuf[10];
-	char *b = tmpBuf;
+	//number of chars in the file
+	int chars = (int) s.st_size;
+	tmpBuf = malloc( chars );
 	//a 32bit number has max. 10 digits
 	pread(fd, tmpBuf, 10 , 0);
 			
@@ -362,6 +366,7 @@ static int myBigFs_write(const char *path, const char *buf, size_t size, off_t o
 	
 	int f = pwrite(fd, longBuffer, strlen(longBuffer) , 0);
 
+	free(tmpBuf);
 	close(fd);
 	
 	if(f<0){
