@@ -20,7 +20,7 @@ struct myData {
 };
  
 #define _XOPEN_SOURCE 500
-#define MAX_BLOCKS 200000
+#define MAX_BLOCKS 10000
  
 void getFullpath(char fpath[1024], const char* path){
 	
@@ -224,11 +224,14 @@ int myBigFs_statfs(const char *path, struct statvfs *buf)
 	long bytes = getFileSystemSize();
         
 	//if a file is smaller then blocksize, use blocksize..
-	if( bytes < 1024 ) bytes = 1024;
-
-    	//printf("bytes: %ld \n" , bytes);
+	if( bytes > 0 && bytes < 1024 ) bytes = 1024;
 	
+	
+    	//printf("bytes: %ld \n" , bytes);	
 	buf->f_bfree =  buf->f_blocks - (bytes / 1024);
+
+
+
 	buf->f_bavail =  buf->f_bfree;
   
 	//printf("f_bfree: %ld\n", buf->f_bfree);
@@ -331,9 +334,9 @@ static int myBigFs_write(const char *path, const char *buf, size_t size, off_t o
 	
     	int err = stat( fpath , &s);
 
-	//printf("file system size after this write in blocks: %ld \n", ( data->fs_size + size ) / 1024 ); 	
+	printf("file system size after this write in blocks: %ld \n", ( data->fs_size + size ) / 1024 ); 	
 	//check if the filesystem is "full"
-	if( ((data->fs_size + size) / 1024) + 1 >= MAX_BLOCKS ){
+	if( ((data->fs_size + size) / 1024)  > MAX_BLOCKS ){
 		data->fs_size = MAX_BLOCKS*1024;
 		return size;
 	} else {
