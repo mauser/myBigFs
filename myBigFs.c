@@ -20,7 +20,7 @@ struct myData {
 };
  
 #define _XOPEN_SOURCE 500
-#define MAX_BLOCKS 10000
+#define MAX_BLOCKS 1000000
  
 void getFullpath(char fpath[1024], const char* path){
 	
@@ -49,7 +49,7 @@ long getFileSize( char fpath[1024] ){
 	tmpBuf[chars] = '\0';	
 
 	//printf("read %d bytes: \n", (int) s.st_size );	 	
-	printf("tmpBuf is %s \n", tmpBuf);	 	
+	//printf("tmpBuf is %s \n", tmpBuf);	 	
 	//interprete the file content as the file size
 	char * pEnd;
 	long fSize= strtol (tmpBuf,&pEnd,10);
@@ -334,7 +334,7 @@ static int myBigFs_write(const char *path, const char *buf, size_t size, off_t o
 	
     	int err = stat( fpath , &s);
 
-	printf("file system size after this write in blocks: %ld \n", ( data->fs_size + size ) / 1024 ); 	
+	//printf("file system size after this write in blocks: %ld \n", ( data->fs_size + size ) / 1024 ); 	
 	//check if the filesystem is "full"
 	if( ((data->fs_size + size) / 1024)  > MAX_BLOCKS ){
 		data->fs_size = MAX_BLOCKS*1024;
