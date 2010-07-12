@@ -20,7 +20,7 @@ struct myData {
 };
  
 #define _XOPEN_SOURCE 500
-#define MAX_BLOCKS 1000000
+#define MAX_BLOCKS 120000
  
 void getFullpath(char fpath[1024], const char* path){
 	
@@ -290,6 +290,8 @@ int myBigFs_statfs(const char *path, struct statvfs *buf)
 				//printf("fSize > size: memset buf 80 %ld", size); 
 				memset(buf, 65, size );
 			}
+
+			buf[0] = '\n';
 			
 			//printf("buf %s \n", buf);
 			free(tmpBuf);
